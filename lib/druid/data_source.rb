@@ -8,7 +8,7 @@ module Druid
 
     def initialize(name, uri, opt = {})
       @name = name.split('/').last
-      @connection_timeout = opt[:connection_timeout] || 10 # if druid is down fail fast
+      @open_timeout = opt[:open_timeout] || 10 # if druid is down fail fast
       @read_timeout = opt[:read_timeout] # we wait until druid is finished
       uri = uri.sample if uri.is_a?(Array)
       if uri.is_a?(String)
@@ -36,7 +36,7 @@ module Druid
       req = Net::HTTP::Get.new(meta_path)
 
       http = Net::HTTP.new(uri.host, uri.port)
-      http.open_timeout = @connection_timeout
+      http.open_timeout = @open_timeout
       http.read_timeout = @read_timeout
       response = http.start { |h| h.request(req) }
 
@@ -64,7 +64,7 @@ module Druid
       req.body = query.to_json
 
       http = Net::HTTP.new(uri.host, uri.port)
-      http.open_timeout = @connection_timeout
+      http.open_timeout = @open_timeout
       http.read_timeout = @read_timeout
       response = http.start { |h| h.request(req) }
 

@@ -47,7 +47,7 @@ datasource = Druid::DataSource.new('datasource_name', 'http://broker-host:8080/d
 
 | key                 | description                                        | type   | default      |
 | ------------------- | -------------------------------------------------- | ------ | ------------ |
-| :connection_timeout | connection timeout for druid services (in seconds) | int    | 60           |
+| :open_timeout       | open timeout for druid services (in seconds)       | int    | 60           |
 | :read_timeout       | read timeout for druid services (in seconds)       | int    | nil          |
 | :discovery_path     | druid service discovery path in zookeeper          | string | '/discovery' |
 
