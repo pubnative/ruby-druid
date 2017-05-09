@@ -6,8 +6,10 @@ module Druid
 
     attr_reader :name, :uri, :metrics, :dimensions
 
-    def initialize(name, uri)
+    def initialize(name, uri, opt = {})
       @name = name.split('/').last
+      @connection_timeout = opt[:connection_timeout] || 10 # if druid is down fail fast
+      @read_timeout = opt[:read_timeout] # we wait until druid is finished
       uri = uri.sample if uri.is_a?(Array)
       if uri.is_a?(String)
         @uri = URI(uri)
@@ -32,11 +34,11 @@ module Druid
       end
 
       req = Net::HTTP::Get.new(meta_path)
-      response = Net::HTTP.new(uri.host, uri.port).start do |http|
-        http.open_timeout = 10 # if druid is down fail fast
-        http.read_timeout = nil # we wait until druid is finished
-        http.request(req)
-      end
+
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.open_timeout = @connection_timeout
+      http.read_timeout = @read_timeout
+      response = http.start { |h| h.request(req) }
 
       if response.code != '200'
         raise "Request failed: #{response.code}: #{response.body}"
@@ -61,11 +63,10 @@ module Druid
       req = Net::HTTP::Post.new(uri.path, { 'Content-Type' => 'application/json' })
       req.body = query.to_json
 
-      response = Net::HTTP.new(uri.host, uri.port).start do |http|
-        http.open_timeout = 10 # if druid is down fail fast
-        http.read_timeout = nil # we wait until druid is finished
-        http.request(req)
-      end
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.open_timeout = @connection_timeout
+      http.read_timeout = @read_timeout
+      response = http.start { |h| h.request(req) }
 
       if response.code != '200'
         # ignore GroupBy cache issues and try again without cached results

@@ -29,31 +29,47 @@ gem install ruby-druid
 
 ## Usage
 
-```ruby
-Druid::Client.new('zk1:2181,zk2:2181/druid').query('service/source')
-```
-
-returns a query object on which all other methods can be called to create a full and valid Druid query.
-
-A query object can be sent like this:
+1. Connect:
 
 ```ruby
-client = Druid::Client.new('zk1:2181,zk2:2181/druid')
-query = Druid::Query.new('service/source')
-client.send(query)
+client = Druid::Client.new('zk1:2181,zk2:2181/druid', opts)
+datasource = client.data_source('druid:broker/datasource_name')
 ```
 
-The `send` method returns the parsed response from the druid server as an array.  If the response is not empty it contains one `ResponseRow` object for each row.  The timestamp by can be received by a method with the same name (i.e. `row.timestamp`), all row values by hashlike syntax (i.e. `row['dimension'])
+if broker is behind of load balancer you can connect to static host without service discovery:
 
-An options hash can be passed when creating `Druid::Client` instance:
 
 ```ruby
-client = Druid::Client.new('zk1:2181,zk2:2181/druid', http_timeout: 20)
+datasource = Druid::DataSource.new('datasource_name', 'http://broker-host:8080/druid/v2/', opts)
 ```
 
-Supported options are:
-* `static_setup` to explicitly specify a broker url, e.g. `static_setup: { 'my/source_name' => 'http://1.2.3.4:8080/druid/v2/' }`
-* `http_timeout` to define a timeout for sending http queries to a broker (in minutes, default value is 2)
+`opts` is an optional hash of connection options:
+
+| key                 | description                                        | type   | default      |
+| ------------------- | -------------------------------------------------- | ------ | ------------ |
+| :connection_timeout | connection timeout for druid services (in seconds) | int    | 60           |
+| :read_timeout       | read timeout for druid services (in seconds)       | int    | nil          |
+| :discovery_path     | druid service discovery path in zookeeper          | string | '/discovery' |
+
+3. Create query:
+
+```ruby
+query = Druid::Query::Builder.new
+```
+4. Build query, e.g.:
+```ruby
+query.granularity(:all)
+query.long_sum(:aggregate1)
+# ....
+```
+
+5. Send request:
+
+```ruby
+result = datasource.post(query)
+```
+
+The `post` method returns the parsed response from the druid server as an array.  If the response is not empty it contains one `ResponseRow` object for each row.  The timestamp by can be received by a method with the same name (i.e. `row.timestamp`), all row values by hashlike syntax (i.e. `row['dimension'])
 
 ### GroupBy
 
