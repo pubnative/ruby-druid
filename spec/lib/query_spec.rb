@@ -136,6 +136,18 @@ describe Druid::Query do
       ])
     end
 
+    it 'builds a javascript post aggregation with parentheses in body' do
+      @query.postagg { js('function(agg1, agg2) { return (agg1 / agg2) * 100; }').as result }
+      expect(JSON.parse(@query.query.to_json)['postAggregations']).to eq([
+        {
+          'type' => 'javascript',
+          'name' => 'result',
+          'fieldNames' => ['agg1', 'agg2'],
+          'function' => 'function(agg1, agg2) { return (agg1 / agg2) * 100; }'
+        }
+      ])
+    end
+
     it 'raises an error when an invalid javascript function is used' do
       expect {
         @query.postagg { js('{ return a_with_b - a; }').as b }
