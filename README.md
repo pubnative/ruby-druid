@@ -29,21 +29,47 @@ gem install ruby-druid
 
 ## Usage
 
-A query can be constructed and sent like so:
+1. Connect:
 
 ```ruby
-data_source = Druid::Client.new('zk1:2181,zk2:2181/druid').data_source('service/source')
-query = Druid::Query::Builder.new.long_sum(:aggregate1).last(1.day).granularity(:all)
-result = data_source.post(query)
+client = Druid::Client.new('zk1:2181,zk2:2181/druid', opts)
+datasource = client.data_source('druid:broker/datasource_name')
 ```
 
-The `post` method on the `DataSource` returns the parsed response from the Druid server as an array.
+if broker is behind of load balancer you can connect to static host without service discovery:
 
-If you don't want to use ZooKeeper for broker discovery, you can explicitly construct a `DataSource`:
 
 ```ruby
-data_source = Druid::DataSource.new('service/source', 'http://localhost:8080/druid/v2')
+datasource = Druid::DataSource.new('datasource_name', 'http://broker-host:8080/druid/v2/', opts)
 ```
+
+`opts` is an optional hash of connection options:
+
+| key                 | description                                        | type   | default      |
+| ------------------- | -------------------------------------------------- | ------ | ------------ |
+| :open_timeout       | open timeout for druid services (in seconds)       | int    | 60           |
+| :read_timeout       | read timeout for druid services (in seconds)       | int    | nil          |
+| :discovery_path     | druid service discovery path in zookeeper          | string | '/discovery' |
+
+3. Create query:
+
+```ruby
+query = Druid::Query::Builder.new
+```
+4. Build query, e.g.:
+```ruby
+query.granularity(:all)
+query.long_sum(:aggregate1)
+# ....
+```
+
+5. Send request:
+
+```ruby
+result = datasource.post(query)
+```
+
+The `post` method returns the parsed response from the druid server as an array.  If the response is not empty it contains one `ResponseRow` object for each row.  The timestamp by can be received by a method with the same name (i.e. `row.timestamp`), all row values by hashlike syntax (i.e. `row['dimension'])
 
 ### GroupBy
 
